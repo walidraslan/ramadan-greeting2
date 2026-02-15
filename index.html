@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تهنئة رمضان</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&display=swap" rel="stylesheet">
+
+  <style>
+    body{
+      margin:0;
+      font-family:"Cairo", system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:#0b2b3a; color:#fff;
+      display:flex; min-height:100vh; align-items:center; justify-content:center; padding:16px;
+    }
+    .wrap{
+      width:min(560px, 100%);
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.15);
+      border-radius:16px; padding:16px;
+      backdrop-filter: blur(6px);
+    }
+    h1{ font-size:18px; margin:0 0 12px; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; }
+    input[type="text"]{
+      flex:1; min-width:200px;
+      padding:12px 14px; border-radius:12px;
+      border:1px solid rgba(255,255,255,.2);
+      outline:none; font-size:16px;
+    }
+    button{
+      padding:12px 14px; border-radius:12px; border:0; cursor:pointer; font-weight:800;
+    }
+    .btn1{ background:#ffffff; color:#0b2b3a; }
+    .btn2{ background:#2dd4bf; color:#062a2a; }
+    canvas{
+      width:100%; height:auto; margin-top:14px; border-radius:14px;
+      background:#000; display:block;
+    }
+    .hint{ opacity:.85; font-size:13px; margin-top:10px; line-height:1.6; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>🌙 تهنئة رمضان — اكتب اسمك وحمّل الصورة جاهزة</h1>
+
+    <div class="row">
+      <input id="nameInput" type="text" placeholder="اكتب اسمك هنا..." />
+      <button class="btn1" id="makeBtn">تحديث الاسم</button>
+      <button class="btn2" id="dlBtn">تحميل PNG</button>
+    </div>
+
+    <canvas id="cv"></canvas>
+
+    <div class="hint">
+      💡 تقدر تبعت لينك باسم جاهز: <b>?name=Ahmed</b>
+    </div>
+  </div>
+
+<script>
+  const canvas = document.getElementById("cv");
+  const ctx = canvas.getContext("2d");
+
+  const img = new Image();
+  img.src = "ramadan.png"; // لازم تكون الصورة بنفس الاسم وموجودة جنب index.html
+
+  const nameInput = document.getElementById("nameInput");
+  const makeBtn = document.getElementById("makeBtn");
+  const dlBtn = document.getElementById("dlBtn");
+
+  function getNameFromURL(){
+    const p = new URLSearchParams(location.search);
+    return p.get("name") || "";
+  }
+
+  function drawCard(name){
+    if(!img.complete) return;
+
+    // خلي الكانفاس نفس مقاس صورة التصميم
+    canvas.width  = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+
+    // ارسم الخلفية
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0);
+
+    // إعدادات النص
+    let fontSize = Math.round(canvas.width * 0.07);
+    ctx.textAlign = "center";
+    ctx.direction = "rtl";
+    ctx.fillStyle = "#000000";
+    ctx.textBaseline = "middle";
+
+    // مكان الاسم (عدّلهم لاحقًا حسب تصميمك)
+    const x = canvas.width  * 0.50;
+    const y = canvas.height * 0.90;
+
+    // صغّر الخط تلقائي لو الاسم طويل
+    const maxWidth = canvas.width * 0.78;
+    ctx.font = `800 ${fontSize}px Cairo`;
+    while(ctx.measureText(name).width > maxWidth && fontSize > 22){
+      fontSize--;
+      ctx.font = `800 ${fontSize}px Cairo`;
+    }
+
+    // ظل بسيط
+    ctx.shadowColor = "rgba(0,0,0,0.12)";
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetY = 1;
+
+    // اكتب الاسم
+    ctx.fillText(name || "اكتب اسمك", x, y);
+  }
+
+  img.onload = async () => {
+    try { await document.fonts.ready; } catch(e){}
+    const preName = getNameFromURL();
+    if(preName) nameInput.value = preName;
+    drawCard(nameInput.value.trim());
+  };
+
+  nameInput.addEventListener("input", () => drawCard(nameInput.value.trim()));
+  makeBtn.onclick = () => drawCard(nameInput.value.trim());
+
+  dlBtn.onclick = () => {
+    // تنزيل الصورة
+    const a = document.createElement("a");
+    a.download = "ramadan-greeting.png";
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+  };
+</script>
+</body>
+</html>
