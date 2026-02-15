@@ -63,7 +63,7 @@
     <canvas id="cv"></canvas>
 
     <div class="hint">
-      ✅ ملاحظة: ارفع الصورة ثم اكتب الاسم. <br/>
+      ✅ ارفع الصورة ثم اكتب الاسم. <br/>
       💡 ممكن تبعت لينك باسم جاهز: <b>?name=Ahmed</b>
     </div>
   </div>
@@ -88,16 +88,23 @@
     return p.get("name") || "";
   }
 
-  // رسم صورة المستخدم داخل دائرة (قص دائري + cover)
+  // ✅ رسم صورة المستخدم داخل الدائرة (قص دائري + تصغير + نزول)
   function drawUserPhotoCircle() {
     if (!userPhoto) return;
 
-    // ✅ دي قيم مناسبة لصورتك (572 × 1024)
-    const cx = 286;   // مركز الدائرة X
-    const cy = 300;   // مركز الدائرة Y
-    const r  = 130;   // نصف القطر
+    // ✅ قيم كنِسَب من أبعاد التصميم (572×1024 تقريباً)
+    const cx = canvas.width  * 0.50;    // 286/572
+    const cy = canvas.height * 0.376;   // 385/1024
+    const r  = canvas.width  * 0.358;   // 205/572
+
+    // ✅ تحكم في شكل الصورة داخل الدائرة
+    const zoom = 0.80;   // قلّلها = أصغر (0.85 / 0.80 / 0.75)
+    const panX = 0;      // يمين/شمال
+    const panY = 60;     // لتحت (زودها لو عايزها تنزل أكتر)
 
     ctx.save();
+
+    // قص دائري
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.closePath();
@@ -106,59 +113,38 @@
     const iw = userPhoto.naturalWidth;
     const ih = userPhoto.naturalHeight;
 
-const target = 2 * r;
+    const target = 2 * r;
 
-// 1) تصغير الصورة (Zoom out)
-// zoom < 1  => الصورة تبان أصغر داخل الدائرة
-// zoom = 1  => الطبيعي
-const zoom = 0.85;   // جرّب 0.80 أو 0.75 لو لسه كبيرة
+    // cover scale ثم zoom-out
+    let scale = Math.max(target / iw, target / ih);
+    scale *= zoom;
 
-// 2) تحريك الصورة داخل الدائرة
-// panY موجب => الصورة تنزل لتحت
-// panX موجب => الصورة تروح يمين
-const panX = 0;       // جرّب 10 أو -10 لو احتجت
-const panY = 35;      // جرّب 50 لو عايزها تنزل أكتر
+    const dw = iw * scale;
+    const dh = ih * scale;
 
-// بدل cover (Math.max) هنستخدم contain (Math.min) عشان تبان أصغر وتفضل جوه الدائرة
-const scale = Math.min(target / iw, target / ih) * zoom;
+    const dx = (cx - dw / 2) + panX;
+    const dy = (cy - dh / 2) + panY;
 
-// أبعاد الرسم على الكانفاس (بعد التصغير)
-const dw = iw * scale;
-const dh = ih * scale;
+    ctx.drawImage(userPhoto, dx, dy, dw, dh);
 
-// نخلي الصورة تتوسّط داخل الدائرة مع إمكانية الإزاحة
-const dx = (cx - dw / 2) + panX;
-const dy = (cy - dh / 2) + panY;
-
-// ارسم الصورة (بدون قص إضافي لأننا أصلاً عاملين clip للدائرة فوق)
-ctx.drawImage(userPhoto, dx, dy, dw, dh);
-    ctx.restore();
-
-    // إطار بسيط (اختياري)
-    ctx.save();
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = "rgba(200,160,80,0.9)";
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
     ctx.restore();
   }
 
   function drawName(name){
-    // ✅ مكان الاسم داخل المستطيل الأبيض أسفل الصورة
-    const x = 286; // منتصف العرض
-    const y = 865; // داخل المستطيل
+    // ✅ مكان الاسم داخل المستطيل الأبيض أسفل التصميم (كنِسَب)
+    const x = canvas.width  * 0.50;
+    const y = canvas.height * 0.845;
 
-    let fontSize = 48;
+    let fontSize = Math.round(canvas.width * 0.085); // مناسب للتصميم
     ctx.textAlign = "center";
     ctx.direction = "rtl";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#000000";
 
-    const maxWidth = 430; // عرض تقريبي داخل المستطيل
+    const maxWidth = canvas.width * 0.75;
     ctx.font = `800 ${fontSize}px Cairo`;
 
-    while(ctx.measureText(name).width > maxWidth && fontSize > 24){
+    while(ctx.measureText(name).width > maxWidth && fontSize > 22){
       fontSize--;
       ctx.font = `800 ${fontSize}px Cairo`;
     }
@@ -173,22 +159,20 @@ ctx.drawImage(userPhoto, dx, dy, dw, dh);
   function drawCard(){
     if(!img.complete) return;
 
-    // نفس أبعاد صورة الخلفية
     canvas.width  = img.naturalWidth;
     canvas.height = img.naturalHeight;
 
-    // ارسم الخلفية
+    // الخلفية
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(img,0,0);
 
-    // ارسم صورة المستخدم (لو موجودة)
+    // صورة الشخص (لو موجودة)
     drawUserPhotoCircle();
 
-    // ارسم الاسم
+    // الاسم
     drawName(nameInput.value.trim());
   }
 
-  // تحميل الخلفية ثم رسم
   img.onload = async () => {
     try { await document.fonts.ready; } catch(e){}
     const preName = getNameFromURL();
@@ -196,7 +180,7 @@ ctx.drawImage(userPhoto, dx, dy, dw, dh);
     drawCard();
   };
 
-  // رفع صورة المستخدم
+  // رفع الصورة
   photoInput.addEventListener("change", () => {
     const file = photoInput.files?.[0];
     if (!file) return;
@@ -213,7 +197,7 @@ ctx.drawImage(userPhoto, dx, dy, dw, dh);
     reader.readAsDataURL(file);
   });
 
-  // تحديث عند كتابة الاسم
+  // تحديث أثناء كتابة الاسم
   nameInput.addEventListener("input", drawCard);
   makeBtn.onclick = drawCard;
 
@@ -234,6 +218,3 @@ ctx.drawImage(userPhoto, dx, dy, dw, dh);
 </script>
 </body>
 </html>
-
-
-
