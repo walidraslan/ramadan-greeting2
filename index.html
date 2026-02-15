@@ -106,14 +106,32 @@
     const iw = userPhoto.naturalWidth;
     const ih = userPhoto.naturalHeight;
 
-    const target = 2 * r;
-    const scale = Math.max(target / iw, target / ih);
-    const sw = target / scale;
-    const sh = target / scale;
-    const sx = (iw - sw) / 2;
-    const sy = (ih - sh) / 2;
+const target = 2 * r;
 
-    ctx.drawImage(userPhoto, sx, sy, sw, sh, cx - r, cy - r, target, target);
+// 1) تصغير الصورة (Zoom out)
+// zoom < 1  => الصورة تبان أصغر داخل الدائرة
+// zoom = 1  => الطبيعي
+const zoom = 0.85;   // جرّب 0.80 أو 0.75 لو لسه كبيرة
+
+// 2) تحريك الصورة داخل الدائرة
+// panY موجب => الصورة تنزل لتحت
+// panX موجب => الصورة تروح يمين
+const panX = 0;       // جرّب 10 أو -10 لو احتجت
+const panY = 35;      // جرّب 50 لو عايزها تنزل أكتر
+
+// بدل cover (Math.max) هنستخدم contain (Math.min) عشان تبان أصغر وتفضل جوه الدائرة
+const scale = Math.min(target / iw, target / ih) * zoom;
+
+// أبعاد الرسم على الكانفاس (بعد التصغير)
+const dw = iw * scale;
+const dh = ih * scale;
+
+// نخلي الصورة تتوسّط داخل الدائرة مع إمكانية الإزاحة
+const dx = (cx - dw / 2) + panX;
+const dy = (cy - dh / 2) + panY;
+
+// ارسم الصورة (بدون قص إضافي لأننا أصلاً عاملين clip للدائرة فوق)
+ctx.drawImage(userPhoto, dx, dy, dw, dh);
     ctx.restore();
 
     // إطار بسيط (اختياري)
@@ -216,5 +234,6 @@
 </script>
 </body>
 </html>
+
 
 
