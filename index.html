@@ -63,7 +63,7 @@
     <canvas id="cv"></canvas>
 
     <div class="hint">
-      ✅ ارفع الصورة ثم اكتب الاسم. <br/>
+      ✅ ملاحظة: ارفع الصورة ثم اكتب الاسم. <br/>
       💡 ممكن تبعت لينك باسم جاهز: <b>?name=Ahmed</b>
     </div>
   </div>
@@ -88,23 +88,16 @@
     return p.get("name") || "";
   }
 
-  // ✅ رسم صورة المستخدم داخل الدائرة (قص دائري + تصغير + نزول)
+  // رسم صورة المستخدم داخل دائرة (قص دائري + cover)
   function drawUserPhotoCircle() {
     if (!userPhoto) return;
 
-    // ✅ قيم كنِسَب من أبعاد التصميم (572×1024 تقريباً)
-    const cx = canvas.width  * 0.50;    // 286/572
-    const cy = canvas.height * 0.376;   // 385/1024
-    const r  = canvas.width  * 0.358;   // 205/572
-
-    // ✅ تحكم في شكل الصورة داخل الدائرة
-    const zoom = 0.80;   // قلّلها = أصغر (0.85 / 0.80 / 0.75)
-    const panX = 0;      // يمين/شمال
-    const panY = 60;     // لتحت (زودها لو عايزها تنزل أكتر)
+    // ✅ دي قيم مناسبة لصورتك (572 × 1024)
+    const cx = 286;   // مركز الدائرة X
+    const cy = 385;   // مركز الدائرة Y
+    const r  = 205;   // نصف القطر
 
     ctx.save();
-
-    // قص دائري
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.closePath();
@@ -114,37 +107,40 @@
     const ih = userPhoto.naturalHeight;
 
     const target = 2 * r;
+    const scale = Math.max(target / iw, target / ih);
+    const sw = target / scale;
+    const sh = target / scale;
+    const sx = (iw - sw) / 2;
+    const sy = (ih - sh) / 2;
 
-    // cover scale ثم zoom-out
-    let scale = Math.max(target / iw, target / ih);
-    scale *= zoom;
+    ctx.drawImage(userPhoto, sx, sy, sw, sh, cx - r, cy - r, target, target);
+    ctx.restore();
 
-    const dw = iw * scale;
-    const dh = ih * scale;
-
-    const dx = (cx - dw / 2) + panX;
-    const dy = (cy - dh / 2) + panY;
-
-    ctx.drawImage(userPhoto, dx, dy, dw, dh);
-
+    // إطار بسيط (اختياري)
+    ctx.save();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "rgba(200,160,80,0.9)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 
   function drawName(name){
-    // ✅ مكان الاسم داخل المستطيل الأبيض أسفل التصميم (كنِسَب)
-    const x = canvas.width  * 0.50;
-    const y = canvas.height * 0.845;
+    // ✅ مكان الاسم داخل المستطيل الأبيض أسفل الصورة
+    const x = 286; // منتصف العرض
+    const y = 865; // داخل المستطيل
 
-    let fontSize = Math.round(canvas.width * 0.085); // مناسب للتصميم
+    let fontSize = 48;
     ctx.textAlign = "center";
     ctx.direction = "rtl";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#000000";
 
-    const maxWidth = canvas.width * 0.75;
+    const maxWidth = 430; // عرض تقريبي داخل المستطيل
     ctx.font = `800 ${fontSize}px Cairo`;
 
-    while(ctx.measureText(name).width > maxWidth && fontSize > 22){
+    while(ctx.measureText(name).width > maxWidth && fontSize > 24){
       fontSize--;
       ctx.font = `800 ${fontSize}px Cairo`;
     }
@@ -159,20 +155,22 @@
   function drawCard(){
     if(!img.complete) return;
 
+    // نفس أبعاد صورة الخلفية
     canvas.width  = img.naturalWidth;
     canvas.height = img.naturalHeight;
 
-    // الخلفية
+    // ارسم الخلفية
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(img,0,0);
 
-    // صورة الشخص (لو موجودة)
+    // ارسم صورة المستخدم (لو موجودة)
     drawUserPhotoCircle();
 
-    // الاسم
+    // ارسم الاسم
     drawName(nameInput.value.trim());
   }
 
+  // تحميل الخلفية ثم رسم
   img.onload = async () => {
     try { await document.fonts.ready; } catch(e){}
     const preName = getNameFromURL();
@@ -180,7 +178,7 @@
     drawCard();
   };
 
-  // رفع الصورة
+  // رفع صورة المستخدم
   photoInput.addEventListener("change", () => {
     const file = photoInput.files?.[0];
     if (!file) return;
@@ -197,7 +195,7 @@
     reader.readAsDataURL(file);
   });
 
-  // تحديث أثناء كتابة الاسم
+  // تحديث عند كتابة الاسم
   nameInput.addEventListener("input", drawCard);
   makeBtn.onclick = drawCard;
 
